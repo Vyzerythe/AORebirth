@@ -7,8 +7,9 @@ if defined AO_REBIRTH_PYTHON_EXE (
 ) else if defined AO_REBIRTH_PYTHON (
     set "AO_REBIRTH_PYTHON_EXE=%AO_REBIRTH_PYTHON%"
 ) else (
-    call :try_python_candidate "%AO_REBIRTH_PORTABLE_PYTHON%"
-    if not defined AO_REBIRTH_PYTHON_EXE for /f "delims=" %%I in ('py.exe -3.13 -c "import sys;print(sys.executable)" 2^>nul') do call :try_python_candidate "%%I"
+    rem Local fork change: prefer the py launcher's newest install, then the portable pin.
+    for /f "delims=" %%I in ('py.exe -c "import sys;print(sys.executable)" 2^>nul') do call :try_python_candidate "%%I"
+    if not defined AO_REBIRTH_PYTHON_EXE call :try_python_candidate "%AO_REBIRTH_PORTABLE_PYTHON%"
     if not defined AO_REBIRTH_PYTHON_EXE for /f "delims=" %%I in ('where.exe python.exe 2^>nul') do call :try_python_candidate "%%I"
 )
 if not defined AO_REBIRTH_PYTHON_EXE (
@@ -22,9 +23,9 @@ if not exist "%AO_REBIRTH_PYTHON_EXE%" (
     echo [AORebirth Python] Set AO_REBIRTH_PYTHON to a 64-bit CPython 3.13.14 python.exe path.
     exit /b 1
 )
-"%AO_REBIRTH_PYTHON_EXE%" -B -X faulthandler -c "import platform,sys;v=sys.version_info;raise SystemExit(0 if platform.python_implementation() == 'CPython' and platform.architecture()[0] == '64bit' and v[:3] == (3, 13, 14) and sys.flags.isolated == 0 else 1)" >nul 2>nul
+"%AO_REBIRTH_PYTHON_EXE%" -B -X faulthandler -c "import platform,sys;v=sys.version_info;raise SystemExit(0 if platform.python_implementation() == 'CPython' and platform.architecture()[0] == '64bit' and v[:2] >= (3, 13) and sys.flags.isolated == 0 else 1)" >nul 2>nul
 if errorlevel 1 (
-    echo [AORebirth Python] FAIL - selected runtime must be non-embedded 64-bit CPython 3.13.14.
+    echo [AORebirth Python] FAIL - selected runtime must be non-embedded 64-bit CPython 3.13 or newer.
     echo [AORebirth Python] The Windows embeddable package is unsupported because its isolated module path blocks repository imports.
     exit /b 1
 )
@@ -39,7 +40,7 @@ exit /b 0
 :try_python_candidate
 if defined AO_REBIRTH_PYTHON_EXE exit /b 0
 if not exist "%~1" exit /b 0
-"%~1" -B -X faulthandler -c "import platform,sys;v=sys.version_info;raise SystemExit(0 if platform.python_implementation() == 'CPython' and platform.architecture()[0] == '64bit' and v[:3] == (3, 13, 14) and sys.flags.isolated == 0 else 1)" >nul 2>nul
+"%~1" -B -X faulthandler -c "import platform,sys;v=sys.version_info;raise SystemExit(0 if platform.python_implementation() == 'CPython' and platform.architecture()[0] == '64bit' and v[:2] >= (3, 13) and sys.flags.isolated == 0 else 1)" >nul 2>nul
 if errorlevel 1 exit /b 0
 set "AO_REBIRTH_PYTHON_EXE=%~1"
 exit /b 0
